@@ -38,7 +38,7 @@ jobs:
         working-directory: benchmark-data
         run: |
           mkdir -p pycasbin
-          cp ../benchmark_result.json pycasbin/benchmark-${{ github.sha }}.json
+          cp ../formatted_result.json pycasbin/benchmark-${{ github.sha }}.json
           
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
