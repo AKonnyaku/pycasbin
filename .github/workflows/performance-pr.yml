@@ -131,8 +131,8 @@ jobs:
         run: |
           PR_NUMBER="${{ github.event.pull_request.number }}"
           if [ -z "$PR_NUMBER" ]; then
-            echo "Warning: Pull request number is not available in event payload." >&2
-            PR_NUMBER="0"
+            echo "Error: Pull request number is not available in event payload." >&2
+            exit 1
           fi
           echo "$PR_NUMBER" > pr_number.txt
 
