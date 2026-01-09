@@ -81,22 +81,38 @@ jobs:
       - name: Format Benchmark Data
         env:
           COMMIT_AUTHOR_EMAIL: ${{ github.event.head_commit.author.email }}
+          COMMIT_AUTHOR_NAME: ${{ github.event.head_commit.author.name }}
+          COMMIT_AUTHOR_USERNAME: ${{ github.event.head_commit.author.username }}
+          COMMIT_COMMITTER_EMAIL: ${{ github.event.head_commit.committer.email }}
+          COMMIT_COMMITTER_NAME: ${{ github.event.head_commit.committer.name }}
+          COMMIT_COMMITTER_USERNAME: ${{ github.event.head_commit.committer.username }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          COMMIT_TIMESTAMP: ${{ github.event.head_commit.timestamp }}
+          COMMIT_URL: ${{ github.event.head_commit.url }}
           COMMIT_ID: ${{ github.event.head_commit.id }}
         run: |
           python .github/scripts/format_benchmark_data.py benchmark_result.json formatted_result.json
 
       - name: Push Benchmark Result
         working-directory: benchmark-data
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p pycasbin
           
-          # Extract PR number from commit message
-          COMMIT_MSG="${{ github.event.head_commit.message }}"
-          PR_NUM=$(echo "$COMMIT_MSG" | grep -oP 'Merge pull request #\K\d+' || echo "$COMMIT_MSG" | grep -oP '\(#\K\d+\)' || echo "unknown")
+          # Extract PR number using GitHub CLI
+          PR_NUM=$(gh pr list --state merged --sha ${{ github.sha }} --json number --jq '.[0].number' || echo "")
+          
+          # Fallback to commit message parsing if GH CLI fails or returns empty
+          if [ -z "$PR_NUM" ]; then
+             COMMIT_MSG="${{ github.event.head_commit.message }}"
+             PR_NUM=$(echo "$COMMIT_MSG" | grep -oP 'Merge pull request #\K\d+' || echo "$COMMIT_MSG" | grep -oP '\(#\K\d+\)' || echo "unknown")
+          fi
           
           DATE=$(date +%Y-%m-%d)
-          if [ "$PR_NUM" == "unknown" ]; then
+          if [ "$PR_NUM" == "unknown" ] || [ -z "$PR_NUM" ]; then
             FILENAME="benchmark-${{ github.sha }}.json"
+            PR_NUM="unknown"
           else
             FILENAME="${DATE}-${PR_NUM}.json"
           fi
