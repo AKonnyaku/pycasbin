@@ -161,7 +161,7 @@ try:
                 new_header = stripped_header + "  "
 
             # Add Diff column header if it's the second header row (vs base)
-            if 'vs base' in line:
+            if 'vs base' in line or 'new pr.json' in line:
                 new_header += "Diff"
             
             # Add closing pipe at the right boundary
