@@ -6,8 +6,16 @@ on:
 
 jobs:
   benchmark-pr:
-    name: Performance benchmark comparison
+    name: Run Benchmark
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - benchmark_adapter.py
+          - benchmark_management_api.py
+          - benchmark_model.py
+          - benchmark_role_manager.py
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -24,19 +32,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt -r requirements_dev.txt
 
-      # Save commit SHAs for display
-      - name: Save commit info
-        id: commits
-        run: |
-          BASE_SHA="${{ github.event.pull_request.base.sha }}"
-          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
-          echo "base_short=${BASE_SHA:0:7}" >> $GITHUB_OUTPUT
-          echo "head_short=${HEAD_SHA:0:7}" >> $GITHUB_OUTPUT
-
       # Run benchmark on PR branch
       - name: Run benchmark on PR branch
         run: |
-          pytest -o "python_files=benchmark_*.py" tests/benchmarks --benchmark-json=pr.json
+          pytest -o "python_files=${{ matrix.target }}" tests/benchmarks --benchmark-json=pr-${{ matrix.target }}.json
 
       # Checkout base branch and run benchmark
       - name: Checkout base branch
@@ -50,7 +49,49 @@ jobs:
         working-directory: base
         run: |
           pip install -r requirements.txt -r requirements_dev.txt
-          python -m pytest -o "python_files=benchmark_*.py" tests/benchmarks --benchmark-json=../base.json
+          pytest -o "python_files=${{ matrix.target }}" tests/benchmarks --benchmark-json=../base-${{ matrix.target }}.json
+
+      - name: Upload benchmark shard
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-shard-${{ matrix.target }}
+          path: |
+            pr-${{ matrix.target }}.json
+            base-${{ matrix.target }}.json
+
+  report:
+    name: Generate Report
+    needs: benchmark-pr
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Download all benchmark shards
+        uses: actions/download-artifact@v4
+        with:
+          pattern: benchmark-shard-*
+          merge-multiple: true
+          path: benchmark_data
+
+      - name: Merge Benchmark Results
+        run: |
+          python .github/scripts/merge_benchmarks.py base.json benchmark_data/base-*.json
+          python .github/scripts/merge_benchmarks.py pr.json benchmark_data/pr-*.json
+
+      # Save commit SHAs for display
+      - name: Save commit info
+        id: commits
+        run: |
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          echo "base_short=${BASE_SHA:0:7}" >> $GITHUB_OUTPUT
+          echo "head_short=${HEAD_SHA:0:7}" >> $GITHUB_OUTPUT
 
       # Compare benchmarks using script
       - name: Compare benchmarks
@@ -79,10 +120,7 @@ jobs:
         run: |
           PR_NUMBER="${{ github.event.pull_request.number }}"
           if [ -z "$PR_NUMBER" ]; then
-            # Fallback for manual run or other events where PR number might not be in payload directly
-            # But for pull_request event it should be there.
             echo "Warning: Pull request number is not available in event payload." >&2
-            # Try to get it from github context if possible, or just use '0' for testing
             PR_NUMBER="0"
           fi
           echo "$PR_NUMBER" > pr_number.txt
@@ -95,3 +133,4 @@ jobs:
           path: |
             comparison.md
             pr_number.txt
+

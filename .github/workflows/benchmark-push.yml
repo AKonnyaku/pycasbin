@@ -1,0 +1,48 @@
+name: Push Benchmark Data
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  benchmark:
+    name: Run Benchmark & Push Data
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements_dev.txt
+
+      - name: Run Benchmark
+        run: |
+          pytest -o "python_files=benchmark_*.py" tests/benchmarks --benchmark-json=benchmark_result.json
+
+      - name: Checkout Data Repo
+        uses: actions/checkout@v4
+        with:
+          repository: AKonnyaku/casbin-benchmark-data
+          token: ${{ secrets.CASBIN_BENCHMARK_DATA_TOKEN }}
+          path: benchmark-data
+
+      - name: Push Benchmark Result
+        working-directory: benchmark-data
+        run: |
+          mkdir -p pycasbin
+          cp ../benchmark_result.json pycasbin/benchmark-${{ github.sha }}.json
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add pycasbin/benchmark-${{ github.sha }}.json
+          git commit -m "Add benchmark result for pycasbin commit ${{ github.sha }}"
+          git push
