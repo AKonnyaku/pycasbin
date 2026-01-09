@@ -11,11 +11,22 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target:
-          - benchmark_adapter.py
-          - benchmark_management_api.py
-          - benchmark_model.py
-          - benchmark_role_manager.py
+        include:
+          - name: benchmark_adapter
+            target: benchmark_adapter.py
+            extra_args: ""
+          - name: benchmark_management_api
+            target: benchmark_management_api.py
+            extra_args: ""
+          - name: benchmark_model_large
+            target: benchmark_model.py
+            extra_args: "-k large"
+          - name: benchmark_model_others
+            target: benchmark_model.py
+            extra_args: "-k 'not large'"
+          - name: benchmark_role_manager
+            target: benchmark_role_manager.py
+            extra_args: ""
     steps:
       - name: Checkout PR branch
         uses: actions/checkout@v4
@@ -35,7 +46,7 @@ jobs:
       # Run benchmark on PR branch
       - name: Run benchmark on PR branch
         run: |
-          pytest -o "python_files=${{ matrix.target }}" tests/benchmarks --benchmark-json=pr-${{ matrix.target }}.json
+          pytest -o "python_files=${{ matrix.target }}" ${{ matrix.extra_args }} tests/benchmarks --benchmark-json=pr-${{ matrix.name }}.json
 
       # Checkout base branch and run benchmark
       - name: Checkout base branch
@@ -49,15 +60,15 @@ jobs:
         working-directory: base
         run: |
           pip install -r requirements.txt -r requirements_dev.txt
-          pytest -o "python_files=${{ matrix.target }}" tests/benchmarks --benchmark-json=../base-${{ matrix.target }}.json
+          pytest -o "python_files=${{ matrix.target }}" ${{ matrix.extra_args }} tests/benchmarks --benchmark-json=../base-${{ matrix.name }}.json
 
       - name: Upload benchmark shard
         uses: actions/upload-artifact@v4
         with:
-          name: benchmark-shard-${{ matrix.target }}
+          name: benchmark-shard-${{ matrix.name }}
           path: |
-            pr-${{ matrix.target }}.json
-            base-${{ matrix.target }}.json
+            pr-${{ matrix.name }}.json
+            base-${{ matrix.name }}.json
 
   report:
     name: Generate Report
@@ -120,8 +131,8 @@ jobs:
         run: |
           PR_NUMBER="${{ github.event.pull_request.number }}"
           if [ -z "$PR_NUMBER" ]; then
-            echo "Warning: Pull request number is not available in event payload." >&2
-            PR_NUMBER="0"
+            echo "Error: Pull request number is not available in event payload." >&2
+            exit 1
           fi
           echo "$PR_NUMBER" > pr_number.txt
 
