@@ -62,16 +62,28 @@ def main():
     print("goos: linux")
     print("goarch: amd64")
     print("pkg: github.com/casbin/pycasbin")
-    print("cpu: GitHub Actions Runner")
+    
+    # Get CPU info
+    cpu_info = "GitHub Actions Runner"
+    try:
+        import platform, subprocess
+        if platform.system() == "Linux":
+            command = "cat /proc/cpuinfo | grep 'model name' | head -1"
+            output = subprocess.check_output(command, shell=True).decode().strip()
+            if output:
+                cpu_info = output.split(': ')[1]
+    except Exception:
+        pass
+    print(f"cpu: {cpu_info}")
     print("")
 
     w_name = 50
     w_val = 20
-    w_delta = 25
+    # w_delta = 25  # Removed 3rd column to avoid duplication with benchmark_formatter.py
 
     # Header
     print(f"{'':<{w_name}}│   old base.json    │   new pr.json      │")
-    print(f"{'':<{w_name}}│    sec/op          │    sec/op          │   vs base")
+    print(f"{'':<{w_name}}│    sec/op          │    sec/op          │")
 
     base_means = []
     pr_means = []
@@ -166,7 +178,7 @@ def main():
 
         display_name = normalize_name(name)
 
-        print(f"{display_name:<{w_name}} {base_str:<{w_val}} {pr_str:<{w_val}} {delta_str:<{w_delta}}")
+        print(f"{display_name:<{w_name}} {base_str:<{w_val}} {pr_str:<{w_val}}")
 
     if base_means and pr_means:
         # Filter out zero values for geomean calculation to avoid math error

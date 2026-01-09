@@ -34,6 +34,13 @@ jobs:
           token: ${{ secrets.CASBIN_BENCHMARK_DATA_TOKEN }}
           path: benchmark-data
 
+      - name: Format Benchmark Data
+        env:
+          COMMIT_AUTHOR_EMAIL: ${{ github.event.head_commit.author.email }}
+          COMMIT_ID: ${{ github.event.head_commit.id }}
+        run: |
+          python .github/scripts/format_benchmark_data.py benchmark_result.json formatted_result.json
+
       - name: Push Benchmark Result
         working-directory: benchmark-data
         run: |
