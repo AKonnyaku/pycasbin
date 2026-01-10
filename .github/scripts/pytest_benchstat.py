@@ -2,6 +2,8 @@ import json
 import sys
 import math
 import re
+import platform
+import subprocess
 
 # Force UTF-8 output for Windows
 sys.stdout.reconfigure(encoding="utf-8")
@@ -79,7 +81,6 @@ def main():
 
     w_name = 50
     w_val = 20
-    # w_delta = 25  # Removed 3rd column to avoid duplication with benchmark_formatter.py
 
     # Header
     print(f"{'':<{w_name}}│   old base.json    │   new pr.json      │")
