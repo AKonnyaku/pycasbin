@@ -119,7 +119,6 @@ try:
     right_boundary = diff_col_start + 14
 
     for line in lines:
-
         if line.strip() == "```":
             in_code = not in_code
             processed_lines.append(line)
