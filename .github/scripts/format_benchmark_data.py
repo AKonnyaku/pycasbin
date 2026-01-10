@@ -53,6 +53,11 @@ def main():
         "url": os.environ.get("COMMIT_URL", ""),
     }
 
+    # Get CPU count
+    cpu_count = data.get("machine_info", {}).get("cpu", {}).get("count")
+    if not cpu_count:
+        cpu_count = os.cpu_count() or 1
+
     benches = []
     for bench in data.get("benchmarks", []):
         # Convert mean (seconds) to ns
@@ -71,7 +76,7 @@ def main():
         "commit": commit_info,
         "date": int(datetime.datetime.now().timestamp() * 1000),  # Current timestamp in ms
         "tool": "python",
-        "procs": "1",  # Assuming single process for now, consistent with other benchmarks
+        "procs": cpu_count,
         "benches": benches,
     }
 
