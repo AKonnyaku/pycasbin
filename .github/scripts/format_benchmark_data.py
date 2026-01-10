@@ -57,7 +57,8 @@ def main():
         val_ns = bench["stats"]["mean"] * 1e9
         
         # Format extra info
-        extra = f"{bench['stats']['rounds']} rounds\n{bench['stats']['iterations']} iterations"
+        total_ops = bench['stats']['rounds'] * bench['stats']['iterations']
+        extra = f"{total_ops} times"
         
         # Create entry
         benches.append({
