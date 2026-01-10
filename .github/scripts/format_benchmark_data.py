@@ -4,6 +4,7 @@ import sys
 import datetime
 import re
 
+
 def normalize_name(name):
     name = re.sub(r"^test_benchmark_", "", name)
     parts = name.split("_")
