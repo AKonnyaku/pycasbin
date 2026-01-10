@@ -7,27 +7,8 @@ on:
 
 jobs:
   benchmark:
-    name: Run Benchmark
+    name: Run Benchmark & Push Data
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: benchmark_adapter
-            target: benchmark_adapter.py
-            extra_args: ""
-          - name: benchmark_management_api
-            target: benchmark_management_api.py
-            extra_args: ""
-          - name: benchmark_model_large
-            target: benchmark_model.py
-            extra_args: "-k large"
-          - name: benchmark_model_others
-            target: benchmark_model.py
-            extra_args: "-k 'not large'"
-          - name: benchmark_role_manager
-            target: benchmark_role_manager.py
-            extra_args: ""
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -44,37 +25,12 @@ jobs:
 
       - name: Run Benchmark
         run: |
-          pytest -o "python_files=${{ matrix.target }}" ${{ matrix.extra_args }} tests/benchmarks --benchmark-json=benchmark-${{ matrix.name }}.json
-
-      - name: Upload benchmark shard
-        uses: actions/upload-artifact@v4
-        with:
-          name: benchmark-shard-${{ matrix.name }}
-          path: benchmark-${{ matrix.name }}.json
-
-  push:
-    name: Push Data
-    needs: benchmark
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Download all benchmark shards
-        uses: actions/download-artifact@v4
-        with:
-          pattern: benchmark-shard-*
-          merge-multiple: true
-          path: benchmark_data
-
-      - name: Merge Benchmark Results
-        run: |
-          python .github/scripts/merge_benchmarks.py benchmark_result.json benchmark_data/benchmark-*.json
+          pytest -o "python_files=benchmark_*.py" tests/benchmarks --benchmark-json=benchmark_result.json
 
       - name: Checkout Data Repo
         uses: actions/checkout@v4
         with:
-          repository: casbin/casbin-benchmark-data
+          repository: AKonnyaku/casbin-benchmark-data
           token: ${{ secrets.CASBIN_BENCHMARK_DATA_TOKEN }}
           path: benchmark-data
 
@@ -95,34 +51,13 @@ jobs:
 
       - name: Push Benchmark Result
         working-directory: benchmark-data
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p pycasbin
-          
-          # Extract PR number using GitHub CLI
-          PR_NUM=$(gh pr list --state merged --sha ${{ github.sha }} --json number --jq '.[0].number' || echo "")
-          
-          # Fallback to commit message parsing if GH CLI fails or returns empty
-          if [ -z "$PR_NUM" ]; then
-             COMMIT_MSG="${{ github.event.head_commit.message }}"
-             PR_NUM=$(echo "$COMMIT_MSG" | grep -oP 'Merge pull request #\K\d+' || echo "$COMMIT_MSG" | grep -oP '\(#\K\d+\)' || echo "unknown")
-          fi
-          
-          DATE=$(date +%Y-%m-%d)
-          if [ "$PR_NUM" == "unknown" ] || [ -z "$PR_NUM" ]; then
-            FILENAME="benchmark-${{ github.sha }}.json"
-            PR_NUM="unknown"
-          else
-            FILENAME="${DATE}-${PR_NUM}.json"
-          fi
-          
-          echo "Generated filename: $FILENAME"
-          cp ../formatted_result.json pycasbin/$FILENAME
+          cp ../formatted_result.json pycasbin/benchmark-${{ github.sha }}.json
           
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           
-          git add pycasbin/$FILENAME
-          git commit -m "Add benchmark result for PR #$PR_NUM (commit ${{ github.sha }})"
+          git add pycasbin/benchmark-${{ github.sha }}.json
+          git commit -m "Add benchmark result for pycasbin commit ${{ github.sha }}"
           git push
