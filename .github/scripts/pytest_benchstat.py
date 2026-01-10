@@ -2,6 +2,8 @@ import json
 import sys
 import math
 import re
+import platform
+import subprocess
 
 # Force UTF-8 output for Windows
 sys.stdout.reconfigure(encoding="utf-8")
@@ -62,16 +64,15 @@ def main():
     print("goos: linux")
     print("goarch: amd64")
     print("pkg: github.com/casbin/pycasbin")
-    
+
     # Get CPU info
     cpu_info = "GitHub Actions Runner"
     try:
-        import platform, subprocess
         if platform.system() == "Linux":
             command = "cat /proc/cpuinfo | grep 'model name' | head -1"
             output = subprocess.check_output(command, shell=True).decode().strip()
             if output:
-                cpu_info = output.split(': ')[1]
+                cpu_info = output.split(": ")[1]
     except Exception:
         pass
     print(f"cpu: {cpu_info}")
@@ -79,7 +80,6 @@ def main():
 
     w_name = 50
     w_val = 20
-    # w_delta = 25  # Removed 3rd column to avoid duplication with benchmark_formatter.py
 
     # Header
     print(f"{'':<{w_name}}│   old base.json    │   new pr.json      │")
