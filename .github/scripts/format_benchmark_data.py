@@ -61,23 +61,20 @@ def main():
         extra = f"{total_ops} times"
         
         # Create entry
-        benches.append({
-            "name": normalize_name(bench["name"]),
-            "value": round(val_ns, 2),
-            "unit": "ns/op",
-            "extra": extra
-        })
+        benches.append(
+            {"name": normalize_name(bench["name"]), "value": round(val_ns, 2), "unit": "ns/op", "extra": extra}
+        )
 
     output_data = {
         "commit": commit_info,
-        "date": int(datetime.datetime.now().timestamp() * 1000), # Current timestamp in ms
+        "date": int(datetime.datetime.now().timestamp() * 1000),  # Current timestamp in ms
         "tool": "python",
-        "benches": benches
+        "benches": benches,
     }
 
-    with open(output_path, 'w', encoding='utf-8') as f:
+    with open(output_path, "w", encoding="utf-8") as f:
         json.dump(output_data, f, indent=2)
-    
+
     print(f"Successfully formatted benchmark data to {output_path}")
 
 if __name__ == "__main__":
