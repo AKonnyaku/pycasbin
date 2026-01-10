@@ -71,6 +71,7 @@ def main():
         "commit": commit_info,
         "date": int(datetime.datetime.now().timestamp() * 1000),  # Current timestamp in ms
         "tool": "python",
+        "procs": "1",  # Assuming single process for now, consistent with other benchmarks
         "benches": benches,
     }
 
