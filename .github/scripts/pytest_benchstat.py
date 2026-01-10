@@ -64,16 +64,15 @@ def main():
     print("goos: linux")
     print("goarch: amd64")
     print("pkg: github.com/casbin/pycasbin")
-    
+
     # Get CPU info
     cpu_info = "GitHub Actions Runner"
     try:
-        import platform, subprocess
         if platform.system() == "Linux":
             command = "cat /proc/cpuinfo | grep 'model name' | head -1"
             output = subprocess.check_output(command, shell=True).decode().strip()
             if output:
-                cpu_info = output.split(': ')[1]
+                cpu_info = output.split(": ")[1]
     except Exception:
         pass
     print(f"cpu: {cpu_info}")
