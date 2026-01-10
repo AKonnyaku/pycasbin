@@ -15,6 +15,7 @@ def normalize_name(name):
             new_parts.append(p.capitalize())
     return "".join(new_parts)
 
+
 def main():
     if len(sys.argv) < 3:
         print("Usage: python format_benchmark_data.py input.json output.json")
@@ -24,7 +25,7 @@ def main():
     output_path = sys.argv[2]
 
     try:
-        with open(input_path, 'r', encoding='utf-8') as f:
+        with open(input_path, "r", encoding="utf-8") as f:
             data = json.load(f)
     except Exception as e:
         print(f"Error loading {input_path}: {e}")
@@ -36,30 +37,30 @@ def main():
         "author": {
             "email": os.environ.get("COMMIT_AUTHOR_EMAIL", ""),
             "name": os.environ.get("COMMIT_AUTHOR_NAME", ""),
-            "username": os.environ.get("COMMIT_AUTHOR_USERNAME", "")
+            "username": os.environ.get("COMMIT_AUTHOR_USERNAME", ""),
         },
         "committer": {
             "email": os.environ.get("COMMIT_COMMITTER_EMAIL", ""),
             "name": os.environ.get("COMMIT_COMMITTER_NAME", ""),
-            "username": os.environ.get("COMMIT_COMMITTER_USERNAME", "")
+            "username": os.environ.get("COMMIT_COMMITTER_USERNAME", ""),
         },
-        "distinct": True, # Assuming true for push to master
+        "distinct": True,  # Assuming true for push to master
         "id": os.environ.get("COMMIT_ID", ""),
         "message": os.environ.get("COMMIT_MESSAGE", ""),
         "timestamp": os.environ.get("COMMIT_TIMESTAMP", ""),
         "tree_id": os.environ.get("COMMIT_TREE_ID", ""),
-        "url": os.environ.get("COMMIT_URL", "")
+        "url": os.environ.get("COMMIT_URL", ""),
     }
 
     benches = []
     for bench in data.get("benchmarks", []):
         # Convert mean (seconds) to ns
         val_ns = bench["stats"]["mean"] * 1e9
-        
+
         # Format extra info
-        total_ops = bench['stats']['rounds'] * bench['stats']['iterations']
+        total_ops = bench["stats"]["rounds"] * bench["stats"]["iterations"]
         extra = f"{total_ops} times"
-        
+
         # Create entry
         benches.append(
             {"name": normalize_name(bench["name"]), "value": round(val_ns, 2), "unit": "ns/op", "extra": extra}
@@ -76,6 +77,7 @@ def main():
         json.dump(output_data, f, indent=2)
 
     print(f"Successfully formatted benchmark data to {output_path}")
+
 
 if __name__ == "__main__":
     main()
